@@ -6,4 +6,6 @@ Jinja2==3.0.3
 itsdangerous==2.0.1
 werkzeug==2.0.3
 Flask-Testing==0.8.1
+flake8==4.0.1
+
 
