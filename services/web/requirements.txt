@@ -1,0 +1,9 @@
+Flask==1.1.2
+Flask-SQLAlchemy==2.5.1
+gunicorn==20.1.0
+psycopg2-binary==2.8.6
+Jinja2==3.0.3
+itsdangerous==2.0.1
+werkzeug==2.0.3
+Flask-Testing==0.8.1
+
