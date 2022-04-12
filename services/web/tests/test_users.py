@@ -1,17 +1,11 @@
 # services/users/project/tests/test_users.py
 import json
 import unittest
-
+from sqlalchemy.exc import IntegrityError
 from project import db
 from project.api.models import User
 from tests.base import BaseTestCase
-
-
-def add_user(username, email):
-    user = User(username=username, email=email)
-    db.session.add(user)
-    db.session.commit()
-    return user
+from tests.utils import add_user
 
 
 class TestUserService(BaseTestCase):
@@ -32,7 +26,8 @@ class TestUserService(BaseTestCase):
                 '/users',
                 data=json.dumps({
                     'username': 'captain',
-                    'email': 'captain@email.org'
+                    'email': 'captain@email.org',
+                    'password': 'betterdaysahead'
                 }),
                 content_type='application/json',
             )
@@ -61,7 +56,8 @@ class TestUserService(BaseTestCase):
         with self.client:
             response = self.client.post(
                 '/users',
-                data=json.dumps({'email': 'captain@email.org'}),
+                data=json.dumps({'email': 'captain@email.org',
+                                'password': 'betterdaysahead'}),
                 content_type='application/json',
             )
             data = json.loads(response.data.decode())
@@ -76,7 +72,8 @@ class TestUserService(BaseTestCase):
                 '/users',
                 data=json.dumps({
                     'username': 'captain',
-                    'email': 'captain@email.org'
+                    'email': 'captain@email.org',
+                    'password': 'betterdaysahead'
                 }),
                 content_type='application/json',
             )
@@ -84,7 +81,8 @@ class TestUserService(BaseTestCase):
                 '/users',
                 data=json.dumps({
                     'username': 'captain',
-                    'email': 'captain@email.org'
+                    'email': 'captain@email.org',
+                    'password': 'betterdaysahead'
                 }),
                 content_type='application/json',
             )
@@ -96,7 +94,7 @@ class TestUserService(BaseTestCase):
 
     def test_single_user(self):
         """Ensure get single user behaves correctly."""
-        user = add_user('captain', 'captain@email.org')
+        user = add_user('captain', 'captain@email.org', 'betterdaysahead')
         with self.client:
             response = self.client.get(f'/users/{user.id}')
             data = json.loads(response.data.decode())
@@ -125,8 +123,8 @@ class TestUserService(BaseTestCase):
 
     def test_all_users(self):
         """Ensure get all users behaves correctly."""
-        add_user('captain', 'captain@email.org')
-        add_user('fakeemail', 'fakeemail@notreal.com')
+        add_user('captain', 'captain@email.org', 'betterdaysahead')
+        add_user('fakeemail', 'fakeemail@notreal.com', 'betterdaysahead')
         with self.client:
             response = self.client.get('/users')
             data = json.loads(response.data.decode())
@@ -151,8 +149,8 @@ class TestUserService(BaseTestCase):
     def test_main_with_users(self):
         """Ensure the main route behaves correctly when users have been
         added to the database."""
-        add_user('captain', 'captain@email.org')
-        add_user('fakeemail', 'fakeemail@notreal.com')
+        add_user('captain', 'captain@email.org', 'betterdaysahead')
+        add_user('fakeemail', 'fakeemail@notreal.com', 'betterdaysahead')
         with self.client:
             response = self.client.get('/')
             self.assertEqual(response.status_code, 200)
@@ -166,13 +164,50 @@ class TestUserService(BaseTestCase):
         with self.client:
             response = self.client.post(
                 '/',
-                data=dict(username='captain', email='captain@developer.com'),
+                data=dict(username='captain', email='captain@developer.com',
+                          password='betterdaysahead'),
                 follow_redirects=True
             )
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'<h1>All Users</h1>', response.data)
             self.assertNotIn(b'<p>No users!</p>', response.data)
             self.assertIn(b'captain', response.data)
+
+    def test_add_user(self):
+        user = add_user('justatest', 'test@test.com', 'betterdaysahead')
+        self.assertTrue(user.id)
+        self.assertEqual(user.username, 'justatest')
+        self.assertEqual(user.email, 'test@test.com')
+        self.assertTrue(user.active)
+
+    def test_add_user_duplicate_username(self):
+        user = add_user('justatest', 'test@test.com', 'betterdaysahead')
+        duplicate_user = User(
+            username='justatest',
+            email='test@test2.com',
+            password='betterdaysahead'
+        )
+        db.session.add(duplicate_user)
+        self.assertRaises(IntegrityError, db.session.commit)
+
+    def test_add_user_duplicate_email(self):
+        user = add_user('justatest', 'test@test.com', 'betterdaysahead')
+        duplicate_user = User(
+            username='justanothertest',
+            email='test@test.com',
+            password='betterdaysahead'
+        )
+        db.session.add(duplicate_user)
+        self.assertRaises(IntegrityError, db.session.commit)
+
+    def test_to_json(self):
+        user = add_user('justatest', 'test@test.com', 'betterdaysahead')
+        self.assertTrue(isinstance(user.to_json(), dict))
+
+    def test_passwords_are_random(self):
+        user_one = add_user('justatest', 'test@test.com', 'betterdaysahead')
+        user_two = add_user('justatest2', 'test@test2.com', 'betterdaysahead')
+        self.assertNotEqual(user_one.password, user_two.password)
 
 
 if __name__ == '__main__':

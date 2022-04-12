@@ -7,5 +7,13 @@ itsdangerous==2.0.1
 werkzeug==2.0.3
 Flask-Testing==0.8.1
 flake8==4.0.1
+Flask-Migrate==3.1.0
+Flask-Cors==3.0.10
+Flask-Bcrypt==1.0.1
+PyJWT==2.3.0
+
+
+
+
 
 
